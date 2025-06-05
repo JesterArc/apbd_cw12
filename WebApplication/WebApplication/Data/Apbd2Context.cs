@@ -41,7 +41,7 @@ public partial class Apbd2Context : DbContext
             entity.Property(e => e.Pesel).HasMaxLength(120);
             entity.Property(e => e.Telephone).HasMaxLength(120);
         });
-
+        
         modelBuilder.Entity<ClientTrip>(entity =>
         {
             entity.HasKey(e => new { e.IdClient, e.IdTrip }).HasName("Client_Trip_pk");
@@ -99,7 +99,6 @@ public partial class Apbd2Context : DbContext
             entity.Property(e => e.Description).HasMaxLength(220);
             entity.Property(e => e.Name).HasMaxLength(120);
         });
-
         OnModelCreatingPartial(modelBuilder);
     }
 
