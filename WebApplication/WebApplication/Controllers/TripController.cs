@@ -28,6 +28,10 @@ public class TripController : ControllerBase
             return BadRequest("Page size cannot be less than 1");
         }
         var pageTrip = await _tripService.GetTripsAsync(page, pageSize);
+        if (pageTrip.AllPages == 0)
+        {
+            return NoContent();
+        }
         if (page > pageTrip.AllPages)
         {
             return NotFound($"Page number is out of range, Pages Available: 1-{pageTrip.AllPages}");
