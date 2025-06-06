@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplication.Data;
+using WebApplication.Models;
 using WebApplication.Models.DTOs;
 
 namespace WebApplication.Services;
@@ -60,5 +61,74 @@ public class TripService : ITripService
     public async Task<ICollection<int>> GetTripIdsAsync()
     {
         return await _context.Trips.Select(t => t.IdTrip).ToListAsync();
+    }
+
+    public async Task<bool> DoesClientExistAsync(string pesel)
+    {
+        return await _context.Clients.AnyAsync(c => c.Pesel.Equals(pesel));
+    }
+
+    public async Task<bool> IsClientSingedUpForThisTripAsync(string pesel, int tripId)
+    {
+        return await _context.ClientTrips
+            .Join(_context.Clients, ct => ct.IdClient, c => c.IdClient, (ct, c) => new {ct, c})
+            .AnyAsync(ctc => ctc.c.Pesel == pesel && ctc.ct.IdTrip == tripId);
+    }
+
+    public async Task<bool> DoesTripExistAsync(int tripId, string tripName)
+    {
+        return await _context.Trips.AnyAsync(t => t.IdTrip == tripId && t.Name.Equals(tripName));
+    }
+
+    public async Task<bool> HasTheTripAlreadyHappenedAsync(int tripId)
+    {
+        return await _context.Trips.Where(t => t.IdTrip == tripId).Select(t => t.DateFrom).Where(dt => dt <= DateTime.Now).AnyAsync();
+    }
+
+    public async Task<ClientWithIdDto> AddClientToTripAsync(ClientToTripDto clientDto)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await _context.Clients.AddAsync(new Client()
+            {
+                FirstName = clientDto.FirstName,
+                LastName = clientDto.LastName,
+                Pesel = clientDto.Pesel,
+                Telephone = clientDto.Telephone,
+                Email = clientDto.Email,
+                ClientTrips = new List<ClientTrip>()
+            });
+            await _context.SaveChangesAsync();
+            var id = await _context.Clients.Where(c => c.Pesel == clientDto.Pesel).Select(c => c.IdClient).FirstAsync();
+            await _context.ClientTrips.AddAsync(new ClientTrip()
+            {
+                IdClient = id,
+                IdTrip = clientDto.IdTrip,
+                RegisteredAt = DateTime.Now,
+                PaymentDate = clientDto.PaymentDate
+            });
+            await _context.SaveChangesAsync();
+            var clientTrip = await _context.ClientTrips.Where(ct => ct.IdClient == id && ct.IdTrip == clientDto.IdTrip)
+                .FirstAsync();
+            var client = await _context.Clients.FindAsync(id);
+            client.ClientTrips.Add(clientTrip);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return await _context.Clients.Where(c => c.IdClient == id).Select(c => new ClientWithIdDto()
+            {
+                IdClient = c.IdClient,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                Pesel = c.Pesel,
+                Telephone = c.Telephone,
+                Email = c.Email
+            }).FirstAsync();
+        }
+        catch (Exception)
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WebApplication.Data;
 using WebApplication.Services;
+using WebApplication.Models.DTOs;
 
 namespace WebApplication.Controllers;
 
@@ -37,5 +39,49 @@ public class TripsController : ControllerBase
             return NotFound($"Page number is out of range, Pages Available: 1-{pageTrip.AllPages}");
         }
         return Ok(pageTrip);
+    }
+
+    [HttpPost("{idTrip}/clients")]
+    public async Task<IActionResult> AddClientToTrip([FromRoute] int idTrip, [FromBody] ClientToTripDto client)
+    {
+        // Swapped the order of the first two checks from this task because this edge case could never happen otherwise
+        // if the client doesn't exist there won't be a trip associated with him
+        // if he exists, the first check would prevent this from triggering, moving on...
+        
+        // Checks if client with this pesel is already signed up for trip with this id
+        if (await _tripService.IsClientSingedUpForThisTripAsync(client.Pesel, idTrip))
+        {
+            return BadRequest($"Client with Pesel {client.Pesel} is already signed up for trip with id = {idTrip}");
+        }
+        // Check if client with this pesel exists
+        if (await _tripService.DoesClientExistAsync(client.Pesel))
+        {
+            return BadRequest($"Client with Pesel {client.Pesel} already exists");
+        }
+
+        if (idTrip != client.IdTrip)
+        {
+            return BadRequest($"Inconsistent trip ID: {idTrip} / {client.IdTrip}");
+        }
+        // Checks if this trip exists
+        if (!await _tripService.DoesTripExistAsync(idTrip, client.TripName))
+        {
+            return NotFound($"No trip with id {idTrip} and name {client.TripName} exists");
+        }
+
+        if (await _tripService.HasTheTripAlreadyHappenedAsync(idTrip))
+        {
+            return BadRequest("Cannot sign up for a trip that has already started");
+        }
+
+        try
+        {
+            var result = await _tripService.AddClientToTripAsync(client);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest("Transaction failed");           
+        }
     }
 }
