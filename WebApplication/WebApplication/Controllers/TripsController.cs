@@ -68,7 +68,7 @@ public class TripsController : ControllerBase
         {
             return NotFound($"No trip with id {idTrip} and name {client.TripName} exists");
         }
-
+        // Checks if trip has already ended
         if (await _tripService.HasTheTripAlreadyHappenedAsync(idTrip))
         {
             return BadRequest("Cannot sign up for a trip that has already started");
@@ -76,12 +76,12 @@ public class TripsController : ControllerBase
 
         try
         {
-            var result = await _tripService.AddClientToTripAsync(client);
-            return Ok(result);
+            // returns info about newly created client
+            return Ok(await _tripService.AddClientToTripAsync(client));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return BadRequest("Transaction failed");           
+            return BadRequest("Transaction failed");
         }
     }
 }

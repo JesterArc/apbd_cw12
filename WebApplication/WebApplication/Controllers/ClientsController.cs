@@ -19,12 +19,12 @@ public class ClientsController : ControllerBase
     {
         if (!await _clientService.DoesClientExistAsync(id))
         {
-            return BadRequest($"No client found with id = {id}");
+            return NotFound($"No client found with id = {id}");
         }
 
         if (await _clientService.IsUserOnAnyTripsAsync(id))
         {
-            return BadRequest($"User with {id} is assigned on a trip. You cannot remove assigned clients.");
+            return BadRequest($"User with id = {id} is assigned on a trip. You cannot remove assigned clients.");
         }
 
         try
@@ -32,7 +32,7 @@ public class ClientsController : ControllerBase
             await _clientService.DeleteUserAsync(id);
             return Ok($"Client with id = {id} deleted.");
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return BadRequest("Transaction failed");
         }

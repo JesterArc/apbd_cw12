@@ -127,7 +127,7 @@ public class TripService : ITripService
         }
         catch (Exception)
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             throw;
         }
     }
