@@ -9,6 +9,7 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<ITripService, TripService>();
+builder.Services.AddScoped<IClientService, ClientService>();
 
 builder.Services.AddDbContext<Apbd2Context>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default"))

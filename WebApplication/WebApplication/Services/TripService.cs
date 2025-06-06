@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplication.Data;
-using WebApplication.Models;
 using WebApplication.Models.DTOs;
 
 namespace WebApplication.Services;
