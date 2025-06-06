@@ -15,18 +15,18 @@ public class TripService : ITripService
     
     public async Task<ICollection<TripDto>> GetTripsAsync()
     {
-        var ids = await GetTripIdsAsync();
-        Dictionary<int, List<ClientDto>> clientList  = new Dictionary<int, List<ClientDto>>();
-        Dictionary<int, List<CountryDto>> countriesList = new Dictionary<int, List<CountryDto>>();
-        foreach (var id in ids)
+        var tripIds = await GetTripIdsAsync();
+        var clientList  = new Dictionary<int, List<ClientDto>>();
+        var countriesList = new Dictionary<int, List<CountryDto>>();
+        foreach (var tripId in tripIds)
         {
-            clientList.Add(id, await _context.Clients
+            clientList.Add(tripId, await _context.Clients
                 .Join(_context.ClientTrips, c => c.IdClient, ct => ct.IdClient, (c, ct) => new {c, ct})
-                .Where(cct => cct.ct.IdTrip == id)
+                .Where(cct => cct.ct.IdTrip == tripId)
                 .Select(cct => new ClientDto() {FirstName = cct.c.FirstName, LastName = cct.c.LastName})
                 .ToListAsync());
-            countriesList.Add(id, await _context.Countries
-                .Where(c => c.IdTrips.Any(sub => sub.IdTrip.Equals(id)))
+            countriesList.Add(tripId, await _context.Countries
+                .Where(c => c.IdTrips.Any(sub => sub.IdTrip.Equals(tripId)))
                 .Select(c => new CountryDto(){Name = c.Name})
                 .ToListAsync());
         }
@@ -44,6 +44,18 @@ public class TripService : ITripService
         )
             .OrderBy(t => t.Name)
             .ToListAsync();
+    }
+
+    public async Task<PageTripDto> GetTripsAsync(int page, int pageSize)
+    {
+        var trips = await GetTripsAsync();
+        return new PageTripDto()
+        {
+            PageNum = page,
+            PageSize = pageSize,
+            AllPages = (int) Math.Ceiling(trips.Count * 1.0 / pageSize),
+            Trips = trips.Skip((page - 1) * pageSize).Take(pageSize).ToList()
+        };
     }
 
     public async Task<ICollection<int>> GetTripIdsAsync()

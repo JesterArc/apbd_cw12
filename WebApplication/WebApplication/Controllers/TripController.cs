@@ -13,11 +13,26 @@ public class TripController : ControllerBase
     {
         _tripService = tripService;
     }
-
-    [HttpGet()]
-    public async Task<IActionResult> GetTrips(int id)
+    [HttpGet]
+    public async Task<IActionResult> GetTrips(int page, int pageSize = 10)
     {
-        var trips = await _tripService.GetTripsAsync();
-        return Ok(trips);
+        switch (page)
+        {
+            case 0:
+                return Ok(await _tripService.GetTripsAsync());
+            case < 1:
+                return BadRequest("Page number cannot be less than 1");
+        }
+        if (pageSize < 1)
+        {
+            return BadRequest("Page size cannot be less than 1");
+        }
+        var pageTrip = await _tripService.GetTripsAsync(page, pageSize);
+        if (page > pageTrip.AllPages)
+        {
+            return NotFound($"Page number is out of range, Pages Available: 1-{pageTrip.AllPages}");
+        }
+        return Ok(pageTrip);
     }
+
 }
