@@ -42,7 +42,7 @@ public class TripService : ITripService
                 Clients = clientList[t.IdTrip]
             }
         )
-            .OrderBy(t => t.Name)
+            .OrderByDescending(t => t.DateFrom)
             .ToListAsync();
     }
 
